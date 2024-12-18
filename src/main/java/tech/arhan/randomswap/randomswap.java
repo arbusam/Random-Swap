@@ -50,7 +50,7 @@ public class randomswap
 
     private static final int TICKS_PER_SECOND = 20;
 
-    private static final int MIN_INTERVAL_MINUTES = 1;
+    private static final int MIN_INTERVAL_MINUTES = 0;
     private static final int MAX_INTERVAL_MINUTES = 1;
 
     private int ticksUntilNextSwap = 0;
@@ -83,27 +83,45 @@ public class randomswap
 
             if (ticksUntilNextSwap <= 0) {
                 MinecraftServer server = event.getServer();
-                if (server != null) {
+                if (server != null && RandomSwapDataStore.getPlayers().size() >= 2) {
                     Player player1 = RandomSwapDataStore.getPlayers().get(0);
                     Player player2 = RandomSwapDataStore.getPlayers().get(1);
                     swapItems(player1, player2);
                 }
+                double randomMinutes = RANDOM.nextDouble() * (MAX_INTERVAL_MINUTES - MIN_INTERVAL_MINUTES) + MIN_INTERVAL_MINUTES;
+                ticksUntilNextSwap = (int) (randomMinutes * 60 * TICKS_PER_SECOND);
             }
         }
     }
 
     private void swapItems(Player player1, Player player2) {
         Inventory inventory1 = player1.getInventory();
-            
+        Inventory inventory2 = player2.getInventory();
+
+        String id1;
+        int count1;
+        String id2;
+        int count2;
         // Reads main inventory + hotbar
-        for (int i = 0; i < inventory1.items.size(); i++) {
-            ItemStack itemStack = inventory1.getItem(i);
-            if (!itemStack.isEmpty()) {
-                // Count: itemStack.getCount()
-                // Item name: itemStack.getItem().getName(itemStack).getString()
-                // Item ID: ForgeRegistries.ITEMS.getKey(itemStack.getItem())
-                LOGGER.info("Slot " + i + ": " + itemStack.getCount() + "x " + itemStack.getItem().getName(itemStack).getString() + " (" + ForgeRegistries.ITEMS.getKey(itemStack.getItem()).toString() + ")");
-            }
+        int randomID = RANDOM.nextInt(inventory1.items.size());
+        ItemStack itemStack = inventory1.getItem(randomID);
+        while (ForgeRegistries.ITEMS.getKey(itemStack.getItem()).toString().equals("minecraft:air")) {
+            randomID = RANDOM.nextInt(inventory1.items.size());
+            itemStack = inventory1.getItem(randomID);
         }
+        // Count: itemStack.getCount()
+        // Item name: itemStack.getItem().getName(itemStack).getString()
+        // Item ID: ForgeRegistries.ITEMS.getKey(itemStack.getItem())
+        // LOGGER.info("Slot " + i + ": " + itemStack.getCount() + "x " + itemStack.getItem().getName(itemStack).getString() + " (" + ForgeRegistries.ITEMS.getKey(itemStack.getItem()).toString() + ")");
+        int randomID2 = RANDOM.nextInt(inventory2.items.size());
+        ItemStack itemStack2 = inventory2.getItem(randomID2);
+        while (ForgeRegistries.ITEMS.getKey(itemStack2.getItem()).toString().equals("minecraft:air")) {
+            randomID2 = RANDOM.nextInt(inventory2.items.size());
+            itemStack2 = inventory2.getItem(randomID2);
+        }
+
+        // Swap items
+        inventory1.setItem(randomID, itemStack2);
+        inventory2.setItem(randomID2, itemStack);
     }
 }
