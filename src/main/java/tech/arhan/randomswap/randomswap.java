@@ -31,6 +31,7 @@ import tech.arhan.randomswap.commands.RandomSwapCommand;
 
 import java.util.Random;
 
+import net.minecraft.network.chat.Component;
 import org.slf4j.Logger;
 
 import net.minecraftforge.event.RegisterCommandsEvent;
@@ -50,12 +51,11 @@ public class randomswap
 
     private static final int TICKS_PER_SECOND = 20;
 
-    private static final int MIN_INTERVAL_MINUTES = 0;
-    private static final int MAX_INTERVAL_MINUTES = 1;
-
     private int ticksUntilNextSwap = 0;
 
     private static final Random RANDOM = new Random();
+
+    private boolean countdownStarted = false;
 
     public randomswap()
     {
@@ -67,16 +67,29 @@ public class randomswap
         RandomSwapCommand.register(event.getDispatcher());
     }
 
-    @SubscribeEvent
-    public void onServerStarting(ServerStartingEvent event) {
-        // TODO: Make this only run when the command is run
-        double randomMinutes = RANDOM.nextDouble() * (MAX_INTERVAL_MINUTES - MIN_INTERVAL_MINUTES) + MIN_INTERVAL_MINUTES;
+    public void startCountdown() {
+        double randomMinutes = RANDOM.nextDouble() * (RandomSwapDataStore.getMaxTime() - RandomSwapDataStore.getMinTime()) + RandomSwapDataStore.getMinTime();
 
         ticksUntilNextSwap = (int) (randomMinutes * 60 * TICKS_PER_SECOND);
     }
 
     @SubscribeEvent
     public void onServerTick(net.minecraftforge.event.TickEvent.ServerTickEvent event) {
+        if (!countdownStarted) {
+            if (RandomSwapDataStore.getCountdownStarted()) {
+                countdownStarted = true;
+                startCountdown();
+            }
+            else {
+                return;
+            }
+        }
+        if (countdownStarted) {
+            if (!RandomSwapDataStore.getCountdownStarted()) {
+                countdownStarted = false;
+                return;
+            }
+        }
         if (event.phase == net.minecraftforge.event.TickEvent.Phase.END) {
             ticksUntilNextSwap--;
             LOGGER.info("Ticks until next swap: " + ticksUntilNextSwap);
@@ -88,8 +101,7 @@ public class randomswap
                     Player player2 = RandomSwapDataStore.getPlayers().get(1);
                     swapItems(player1, player2);
                 }
-                double randomMinutes = RANDOM.nextDouble() * (MAX_INTERVAL_MINUTES - MIN_INTERVAL_MINUTES) + MIN_INTERVAL_MINUTES;
-                ticksUntilNextSwap = (int) (randomMinutes * 60 * TICKS_PER_SECOND);
+                startCountdown();
             }
         }
     }
@@ -103,6 +115,28 @@ public class randomswap
         String id2;
         int count2;
         // Reads main inventory + hotbar
+        boolean notEmpty = false;
+        for (int i = 0; i < inventory1.items.size(); i++) {
+            ItemStack itemStack = inventory1.getItem(i);
+            if (!ForgeRegistries.ITEMS.getKey(itemStack.getItem()).toString().equals("minecraft:air")) {
+                notEmpty = true;
+                break;
+            }
+        }
+        if (!notEmpty) {
+            return;
+        }
+        notEmpty = false;
+        for (int i = 0; i < inventory2.items.size(); i++) {
+            ItemStack itemStack = inventory2.getItem(i);
+            if (!ForgeRegistries.ITEMS.getKey(itemStack.getItem()).toString().equals("minecraft:air")) {
+                notEmpty = true;
+                break;
+            }
+        }
+        if (!notEmpty) {
+            return;
+        }
         int randomID = RANDOM.nextInt(inventory1.items.size());
         ItemStack itemStack = inventory1.getItem(randomID);
         while (ForgeRegistries.ITEMS.getKey(itemStack.getItem()).toString().equals("minecraft:air")) {
@@ -123,5 +157,15 @@ public class randomswap
         // Swap items
         inventory1.setItem(randomID, itemStack2);
         inventory2.setItem(randomID2, itemStack);
+
+        if (RandomSwapDataStore.getShowLostItem()) {
+            player1.displayClientMessage(Component.literal("You lost: " + itemStack.getCount() + "x " + itemStack.getItem().getName(itemStack).getString()), false);
+            player2.displayClientMessage(Component.literal("You lost: " + itemStack2.getCount() + "x " + itemStack2.getItem().getName(itemStack2).getString()), false);
+        }
+
+        if (RandomSwapDataStore.getShowGainedItem()) {
+            player1.displayClientMessage(Component.literal("You gained: " + itemStack2.getCount() + "x " + itemStack2.getItem().getName(itemStack2).getString()), false);
+            player2.displayClientMessage(Component.literal("You gained: " + itemStack.getCount() + "x " + itemStack.getItem().getName(itemStack).getString()), false);
+        }
     }
 }

@@ -34,7 +34,7 @@ minecraft {
     // These can be tweaked, removed, or duplicated as needed.
     runs {
         client {
-            args '--username', 'Player2'
+            args '--username', 'Player1'
             workingDirectory project.file('run')
 
             // Recommended logging data for a userdev environment
