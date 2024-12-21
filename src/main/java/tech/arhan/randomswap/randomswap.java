@@ -1,5 +1,6 @@
 package tech.arhan.randomswap;
 
+import org.apache.commons.lang3.tuple.Pair;
 import com.mojang.logging.LogUtils;
 import net.minecraft.server.MinecraftServer;
 import net.minecraftforge.common.MinecraftForge;
@@ -91,10 +92,44 @@ public class randomswap
 
             if (ticksUntilNextSwap <= 0) {
                 MinecraftServer server = event.getServer();
-                if (server != null && RandomSwapDataStore.getPlayers().size() >= 2) {
+                if (server != null && RandomSwapDataStore.getPlayers().size() == 2) {
                     Player player1 = RandomSwapDataStore.getPlayers().get(0);
                     Player player2 = RandomSwapDataStore.getPlayers().get(1);
                     swapItems(player1, player2);
+                }
+                else if (server != null && RandomSwapDataStore.getPlayers().size() > 2) {
+                    int count = RandomSwapDataStore.getPlayers().size();
+                    int[] randomOrder = new int[count];
+                    ItemStack[] lostItemStacks = new ItemStack[count];
+                    ItemStack[] gainedItemStacks = new ItemStack[count];
+                    int[] randomIDs = new int[count];
+                    for (int i = 0; i < count; i++) {
+                        randomOrder[i] = i;
+                    }
+                    Random random = new Random();
+                    for (int i = count - 1; i > 0; i--) {
+                        int j = random.nextInt(i + 1);
+                        int temp = randomOrder[i];
+                        randomOrder[i] = randomOrder[j];
+                        randomOrder[j] = temp;
+                    }
+                    for (int i = 0; i < count; i += 1) {
+                        Player player1 = RandomSwapDataStore.getPlayers().get(randomOrder[i]);
+                        Pair<Integer, ItemStack> pair = getRandomItemStack(player1.getInventory());
+                        lostItemStacks[i] = pair.getRight();
+                        randomIDs[i] = pair.getLeft();
+                        gainedItemStacks[(i+1) % count] = lostItemStacks[i];
+                    }
+                    for (int i = 0; i < count; i += 1) {
+                        Player player = RandomSwapDataStore.getPlayers().get(i);
+                        player.getInventory().setItem(randomIDs[i], gainedItemStacks[i]);
+                        if (RandomSwapDataStore.getShowLostItem()) {
+                            player.displayClientMessage(Component.literal("You lost: " + lostItemStacks[i].getCount() + "x " + lostItemStacks[i].getItem().getName(lostItemStacks[i]).getString()), false);
+                        }
+                        if (RandomSwapDataStore.getShowGainedItem()) {
+                            player.displayClientMessage(Component.literal("You gained: " + gainedItemStacks[i].getCount() + "x " + gainedItemStacks[i].getItem().getName(gainedItemStacks[i]).getString()), false);
+                        }
+                    }
                 }
                 startCountdown();
             }
@@ -162,5 +197,26 @@ public class randomswap
             player1.displayClientMessage(Component.literal("You gained: " + itemStack2.getCount() + "x " + itemStack2.getItem().getName(itemStack2).getString()), false);
             player2.displayClientMessage(Component.literal("You gained: " + itemStack.getCount() + "x " + itemStack.getItem().getName(itemStack).getString()), false);
         }
+    }
+
+    private Pair<Integer, ItemStack> getRandomItemStack (Inventory inventory) {
+        boolean notEmpty = false;
+        for (int i = 0; i < inventory.items.size(); i++) {
+            ItemStack itemStack = inventory.getItem(i);
+            if (!ForgeRegistries.ITEMS.getKey(itemStack.getItem()).toString().equals("minecraft:air")) {
+                notEmpty = true;
+                break;
+            }
+        }
+        if (!notEmpty) {
+            return Pair.of(0, ItemStack.EMPTY);
+        }
+        int randomID = RANDOM.nextInt(inventory.items.size());
+        ItemStack itemStack = inventory.getItem(randomID);
+        while (ForgeRegistries.ITEMS.getKey(itemStack.getItem()).toString().equals("minecraft:air")) {
+            randomID = RANDOM.nextInt(inventory.items.size());
+            itemStack = inventory.getItem(randomID);
+        }
+        return Pair.of(randomID, itemStack);
     }
 }
