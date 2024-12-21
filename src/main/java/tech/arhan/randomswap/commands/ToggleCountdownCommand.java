@@ -15,9 +15,7 @@ public class ToggleCountdownCommand {
     dispatcher.register(Commands.literal("RandomSwapToggleCountdown")
       .requires(source -> source.hasPermission(0))
       .executes(context -> {
-        randomswap.showCountdownText = !randomswap.showCountdownText;
-        context.getSource().sendSuccess(Component.literal("Random swap countdown text is now " + (randomswap.showCountdownText ? "enabled" : "disabled")), false);
-        NetworkHandler.INSTANCE.send(PacketDistributor.ALL.noArg(), new UpdateShowCountdownPacket(randomswap.showCountdownText));
+        NetworkHandler.INSTANCE.send(PacketDistributor.PLAYER.with(() -> context.getSource().getPlayer()), new UpdateShowCountdownPacket());
         return 1;
       }));
   }

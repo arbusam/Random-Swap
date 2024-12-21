@@ -40,8 +40,6 @@ public class randomswap
 
     private boolean countdownStarted = false;
 
-    public static boolean showCountdownText = true;
-
     public randomswap()
     {
         MinecraftForge.EVENT_BUS.register(this);

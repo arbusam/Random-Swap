@@ -18,6 +18,7 @@ import tech.arhan.randomswap.RandomSwapDataStore;
 public class RandomSwapCommand {
   public static void register(CommandDispatcher<CommandSourceStack> dispatcher) {
     dispatcher.register(Commands.literal("RandomSwap")
+      .requires(source -> source.hasPermission(3))
       .then(Commands.argument("players", StringArgumentType.greedyString())
         .suggests((context, builder) -> {
           String remaining = builder.getRemaining().trim();
@@ -83,6 +84,7 @@ public class RandomSwapCommand {
     );
 
     dispatcher.register(Commands.literal("RandomSwapCancel")
+      .requires(source -> source.hasPermission(3))
       .executes(context -> {
         if (RandomSwapDataStore.getCountdownStarted()) {
           RandomSwapDataStore.clearPlayers();
@@ -96,6 +98,7 @@ public class RandomSwapCommand {
       }));
 
     dispatcher.register(Commands.literal("RandomSwapMinTime")
+      .requires(source -> source.hasPermission(3))
       .then(Commands.argument("minutes", IntegerArgumentType.integer())
         .executes(context -> {
           int minutes = IntegerArgumentType.getInteger(context, "minutes");
@@ -109,6 +112,7 @@ public class RandomSwapCommand {
       ));
 
     dispatcher.register(Commands.literal("RandomSwapMaxTime")
+      .requires(source -> source.hasPermission(3))
       .then(Commands.argument("minutes", IntegerArgumentType.integer())
         .executes(context -> {
           int minutes = IntegerArgumentType.getInteger(context, "minutes");
@@ -122,6 +126,7 @@ public class RandomSwapCommand {
       ));
 
     dispatcher.register(Commands.literal("RandomSwapShowLostItem")
+      .requires(source -> source.hasPermission(3))
       .executes(context -> {
         RandomSwapDataStore.setShowLostItem(!RandomSwapDataStore.getShowLostItem());
         context.getSource().sendSuccess(
@@ -132,6 +137,7 @@ public class RandomSwapCommand {
       }));
 
     dispatcher.register(Commands.literal("RandomSwapShowGainedItem")
+      .requires(source -> source.hasPermission(3))
       .executes(context -> {
         RandomSwapDataStore.setShowGainedItem(!RandomSwapDataStore.getShowGainedItem());
         context.getSource().sendSuccess(
