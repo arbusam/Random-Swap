@@ -6,7 +6,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import com.mojang.brigadier.CommandDispatcher;
-import com.mojang.brigadier.arguments.IntegerArgumentType;
+import com.mojang.brigadier.arguments.FloatArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
@@ -99,9 +99,9 @@ public class RandomSwapCommand {
 
     dispatcher.register(Commands.literal("RandomSwapMinTime")
       .requires(source -> source.hasPermission(3))
-      .then(Commands.argument("minutes", IntegerArgumentType.integer())
+      .then(Commands.argument("minutes", FloatArgumentType.floatArg())
         .executes(context -> {
-          int minutes = IntegerArgumentType.getInteger(context, "minutes");
+          float minutes = FloatArgumentType.getFloat(context, "minutes");
           RandomSwapDataStore.setMinTime(minutes);
           context.getSource().sendSuccess(
             Component.literal("Minimum swap time set to: " + minutes + " minutes"),
@@ -113,9 +113,9 @@ public class RandomSwapCommand {
 
     dispatcher.register(Commands.literal("RandomSwapMaxTime")
       .requires(source -> source.hasPermission(3))
-      .then(Commands.argument("minutes", IntegerArgumentType.integer())
+      .then(Commands.argument("minutes", FloatArgumentType.floatArg())
         .executes(context -> {
-          int minutes = IntegerArgumentType.getInteger(context, "minutes");
+          float minutes = FloatArgumentType.getFloat(context, "minutes");
           RandomSwapDataStore.setMaxTime(minutes);
           context.getSource().sendSuccess(
             Component.literal("Maximum swap time set to: " + minutes + " minutes"),
