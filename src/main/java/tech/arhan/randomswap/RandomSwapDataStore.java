@@ -9,8 +9,8 @@ public class RandomSwapDataStore {
   private static final List<Player> players = new ArrayList<Player>();
   private static int minTime = 0;
   private static int maxTime = 10;
-  private static boolean showLostItem = false;
-  private static boolean showGainedItem = false;
+  private static boolean showLostItem = true;
+  private static boolean showGainedItem = true;
   private static boolean countdownStarted = false;
 
   public static void addPlayer(Player player) {

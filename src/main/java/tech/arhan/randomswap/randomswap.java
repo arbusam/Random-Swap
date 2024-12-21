@@ -1,33 +1,18 @@
 package tech.arhan.randomswap;
 
 import com.mojang.logging.LogUtils;
-import net.minecraft.client.Minecraft;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.item.BlockItem;
-import net.minecraft.world.item.CreativeModeTab;
-import net.minecraft.world.item.Item;
-import net.minecraft.world.level.block.Block;
-import net.minecraft.world.level.block.Blocks;
-import net.minecraft.world.level.block.state.BlockBehaviour;
-import net.minecraft.world.level.material.Material;
 import net.minecraftforge.common.MinecraftForge;
-import net.minecraftforge.common.util.LogicalSidedProvider;
-import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.InterModComms;
-import net.minecraftforge.fml.LogicalSide;
 import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
 import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
-import net.minecraftforge.fml.event.lifecycle.InterModEnqueueEvent;
-import net.minecraftforge.fml.event.lifecycle.InterModProcessEvent;
-import net.minecraftforge.event.server.ServerStartingEvent;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
-import net.minecraftforge.registries.DeferredRegister;
+import net.minecraftforge.network.PacketDistributor;
 import net.minecraftforge.registries.ForgeRegistries;
-import net.minecraftforge.registries.RegistryObject;
 import tech.arhan.randomswap.commands.RandomSwapCommand;
+import tech.arhan.randomswap.commands.ToggleCountdownCommand;
+import tech.arhan.randomswap.network.NetworkHandler;
+import tech.arhan.randomswap.network.UpdateCountdownPacket;
 
 import java.util.Random;
 
@@ -35,9 +20,6 @@ import net.minecraft.network.chat.Component;
 import org.slf4j.Logger;
 
 import net.minecraftforge.event.RegisterCommandsEvent;
-import net.minecraftforge.event.TickEvent.PlayerTickEvent;
-import net.minecraftforge.event.TickEvent.ServerTickEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
@@ -49,28 +31,38 @@ public class randomswap
     public static final String MODID = "randomswap";
     private static final Logger LOGGER = LogUtils.getLogger();
 
-    private static final int TICKS_PER_SECOND = 20;
+    public static final int TICKS_PER_SECOND = 20;
 
     private int ticksUntilNextSwap = 0;
+    public static int ticksSinceLastSwap = 0;
 
     private static final Random RANDOM = new Random();
 
     private boolean countdownStarted = false;
 
+    public static boolean showCountdownText = true;
+
     public randomswap()
     {
         MinecraftForge.EVENT_BUS.register(this);
+        FMLJavaModLoadingContext.get().getModEventBus().addListener(this::onCommonSetup);
+    }
+
+    private void onCommonSetup(FMLCommonSetupEvent event) {
+        NetworkHandler.register();
     }
 
     @SubscribeEvent
     public void onRegisterCommands(RegisterCommandsEvent event) {
         RandomSwapCommand.register(event.getDispatcher());
+        ToggleCountdownCommand.register(event.getDispatcher());
     }
 
     public void startCountdown() {
         double randomMinutes = RANDOM.nextDouble() * (RandomSwapDataStore.getMaxTime() - RandomSwapDataStore.getMinTime()) + RandomSwapDataStore.getMinTime();
 
         ticksUntilNextSwap = (int) (randomMinutes * 60 * TICKS_PER_SECOND);
+        ticksSinceLastSwap = 0;
     }
 
     @SubscribeEvent
@@ -92,7 +84,12 @@ public class randomswap
         }
         if (event.phase == net.minecraftforge.event.TickEvent.Phase.END) {
             ticksUntilNextSwap--;
+            ticksSinceLastSwap++;
+            int secondsSinceLastSwap = ticksSinceLastSwap / TICKS_PER_SECOND;
+            NetworkHandler.INSTANCE.send(PacketDistributor.ALL.noArg(), new UpdateCountdownPacket(secondsSinceLastSwap));
+
             LOGGER.info("Ticks until next swap: " + ticksUntilNextSwap);
+            LOGGER.info("Ticks since last swap: " + ticksSinceLastSwap);
 
             if (ticksUntilNextSwap <= 0) {
                 MinecraftServer server = event.getServer();
