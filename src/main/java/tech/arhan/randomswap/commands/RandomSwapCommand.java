@@ -1,6 +1,7 @@
 package tech.arhan.randomswap.commands;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -10,6 +11,7 @@ import com.mojang.brigadier.arguments.FloatArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
+import net.minecraft.commands.arguments.EntityArgument;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
@@ -19,6 +21,25 @@ public class RandomSwapCommand {
   public static void register(CommandDispatcher<CommandSourceStack> dispatcher) {
     dispatcher.register(Commands.literal("RandomSwap")
       .requires(source -> source.hasPermission(3))
+      .then(Commands.argument("playerTargetSelector", EntityArgument.players())
+        .executes(context -> {
+          if (RandomSwapDataStore.getCountdownStarted()) {
+            context.getSource().sendSuccess(Component.literal("Random swap already started, run /RandomSwapCancel to cancel it."), true);
+            return 0;
+          }
+          Collection<ServerPlayer> targets = EntityArgument.getPlayers(context, "playerTargetSelector");
+          System.out.println("Selected players: " + targets);
+          if (targets.size() < 2) {
+            context.getSource().sendFailure(Component.literal("You must specify at least two players."));
+            return 0;
+          }
+          RandomSwapDataStore.clearPlayers();
+          RandomSwapDataStore.setPlayers(new ArrayList<>(targets));
+          context.getSource().sendSuccess(Component.literal("Beginning Random Swap with: " + targets.size() + " players"), true);
+          RandomSwapDataStore.setCountdownStarted(true);
+          return 1;
+        })
+      )
       .then(Commands.argument("players", StringArgumentType.greedyString())
         .suggests((context, builder) -> {
           String remaining = builder.getRemaining().trim();
@@ -43,9 +64,10 @@ public class RandomSwapCommand {
           return CompletableFuture.completedFuture(builder.build());
         })
         .executes(context -> {
+          System.out.println("Test");
           if (RandomSwapDataStore.getCountdownStarted()) {
             context.getSource().sendSuccess(Component.literal("Random swap already started, run /RandomSwapCancel to cancel it."), true);
-            return 1;
+            return 0;
           }
           String playersStr = StringArgumentType.getString(context, "players").trim();
           if (playersStr.isEmpty()) {
