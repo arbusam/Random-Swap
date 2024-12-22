@@ -16,11 +16,6 @@ public class RandomSwapDataStore {
   public static void addPlayer(Player player) {
     players.add(player);
   }
-  
-  public static void setPlayers(List<Player> players) {
-    players.clear();
-    players.addAll(players);
-  }
 
   public static List<Player> getPlayers() {
     return players;

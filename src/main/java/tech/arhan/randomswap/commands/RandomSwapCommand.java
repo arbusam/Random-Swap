@@ -33,7 +33,9 @@ public class RandomSwapCommand {
             return 0;
           }
           RandomSwapDataStore.clearPlayers();
-          RandomSwapDataStore.setPlayers(new ArrayList<>(targets));
+          for (ServerPlayer p : targets) {
+            RandomSwapDataStore.addPlayer(p);
+          }
           context.getSource().sendSuccess(Component.literal("Beginning Random Swap with: " + targets.size() + " players"), true);
           RandomSwapDataStore.setCountdownStarted(true);
           return 1;

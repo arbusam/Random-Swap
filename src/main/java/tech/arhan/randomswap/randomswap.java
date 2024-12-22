@@ -42,6 +42,8 @@ public class randomswap
 
     private boolean countdownStarted = false;
 
+    private boolean swapping = false;
+
     public randomswap()
     {
         MinecraftForge.EVENT_BUS.register(this);
@@ -98,10 +100,8 @@ public class randomswap
             int secondsSinceLastSwap = ticksSinceLastSwap / TICKS_PER_SECOND;
             NetworkHandler.INSTANCE.send(PacketDistributor.ALL.noArg(), new UpdateCountdownPacket(secondsSinceLastSwap));
 
-            LOGGER.info("Ticks until next swap: " + ticksUntilNextSwap);
-            LOGGER.info("Ticks since last swap: " + ticksSinceLastSwap);
-
-            if (ticksUntilNextSwap <= 0) {
+            if (ticksUntilNextSwap <= 0 && !swapping) {
+                swapping = true;
                 MinecraftServer server = event.getServer();
                 if (server != null && RandomSwapDataStore.getPlayers().size() == 2) {
                     Player player1 = RandomSwapDataStore.getPlayers().get(0);
@@ -110,28 +110,22 @@ public class randomswap
                 }
                 else if (server != null && RandomSwapDataStore.getPlayers().size() > 2) {
                     int count = RandomSwapDataStore.getPlayers().size();
+                    Random random = new Random();
                     int[] randomOrder = new int[count];
+
+                    randomOrder = generateDerangement(count, random);
+
                     ItemStack[] lostItemStacks = new ItemStack[count];
                     ItemStack[] gainedItemStacks = new ItemStack[count];
                     int[] randomIDs = new int[count];
-                    for (int i = 0; i < count; i++) {
-                        randomOrder[i] = i;
-                    }
-                    Random random = new Random();
-                    for (int i = count - 1; i > 0; i--) {
-                        int j = random.nextInt(i + 1);
-                        int temp = randomOrder[i];
-                        randomOrder[i] = randomOrder[j];
-                        randomOrder[j] = temp;
-                    }
-                    for (int i = 0; i < count; i += 1) {
+                    for (int i = 0; i < count; i ++) {
                         Player player1 = RandomSwapDataStore.getPlayers().get(randomOrder[i]);
                         Pair<Integer, ItemStack> pair = getRandomItemStack(player1.getInventory());
                         lostItemStacks[i] = pair.getRight();
                         randomIDs[i] = pair.getLeft();
                         gainedItemStacks[(i+1) % count] = lostItemStacks[i];
                     }
-                    for (int i = 0; i < count; i += 1) {
+                    for (int i = 0; i < count; i ++) {
                         Player player = RandomSwapDataStore.getPlayers().get(i);
                         player.getInventory().setItem(randomIDs[i], gainedItemStacks[i]);
                         if (RandomSwapDataStore.getShowLostItem()) {
@@ -142,9 +136,44 @@ public class randomswap
                         }
                     }
                 }
+                swapping = false;
                 startCountdown();
             }
         }
+    }
+
+    private int[] generateDerangement(int count, Random random) {
+        int[] derangedOrder = new int[count];
+        for (int i = 0; i < count; i++) {
+            derangedOrder[i] = i;
+        }
+
+        boolean deranged = false;
+        int attempts = 0;
+        int maxAttempts = 1000;
+
+        while (!deranged && attempts < maxAttempts) {
+            for (int i = count - 1; i > 0; i--) {
+                int j = random.nextInt(i + 1);
+                int temp = derangedOrder[i];
+                derangedOrder[i] = derangedOrder[j];
+                derangedOrder[j] = temp;
+            }
+
+            deranged = true;
+            for (int i = 0; i < count; i++) {
+                if (derangedOrder[i] == i) {
+                    deranged = false;
+                    break;
+                }
+            }
+            attempts++;
+        }
+
+        if (attempts >= maxAttempts) {
+            LOGGER.error("Failed to generate derangement after " + maxAttempts + " attempts.");
+        }
+        return derangedOrder;
     }
 
     private void swapItems(Player player1, Player player2) {
