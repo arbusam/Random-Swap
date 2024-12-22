@@ -4,9 +4,7 @@ import com.mojang.brigadier.CommandDispatcher;
 
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
-import net.minecraft.network.chat.Component;
 import net.minecraftforge.network.PacketDistributor;
-import tech.arhan.randomswap.randomswap;
 import tech.arhan.randomswap.network.NetworkHandler;
 import tech.arhan.randomswap.network.UpdateShowCountdownPacket;
 

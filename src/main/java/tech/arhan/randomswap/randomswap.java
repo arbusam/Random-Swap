@@ -21,6 +21,7 @@ import net.minecraft.network.chat.Component;
 import org.slf4j.Logger;
 
 import net.minecraftforge.event.RegisterCommandsEvent;
+import net.minecraftforge.event.entity.player.PlayerEvent;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
@@ -62,6 +63,16 @@ public class randomswap
 
         ticksUntilNextSwap = (int) (randomMinutes * 60 * TICKS_PER_SECOND);
         ticksSinceLastSwap = 0;
+    }
+
+    @SubscribeEvent
+    public void onPlayerLoggedOut(PlayerEvent.PlayerLoggedOutEvent event) {
+        if (event.getEntity() != null && event.getEntity() instanceof Player && RandomSwapDataStore.getPlayers().contains(event.getEntity())) {
+            RandomSwapDataStore.setCountdownStarted(false);
+            for (Player player : RandomSwapDataStore.getPlayers()) {
+                player.displayClientMessage(Component.literal("One of the players logged out, random swap cancelled."), false);
+            }
+        }
     }
 
     @SubscribeEvent
@@ -140,10 +151,6 @@ public class randomswap
         Inventory inventory1 = player1.getInventory();
         Inventory inventory2 = player2.getInventory();
 
-        String id1;
-        int count1;
-        String id2;
-        int count2;
         // Reads main inventory + hotbar
         boolean notEmpty = false;
         for (int i = 0; i < inventory1.items.size(); i++) {
