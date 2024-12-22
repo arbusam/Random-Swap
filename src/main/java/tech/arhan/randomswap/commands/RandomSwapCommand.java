@@ -28,7 +28,6 @@ public class RandomSwapCommand {
             return 0;
           }
           Collection<ServerPlayer> targets = EntityArgument.getPlayers(context, "playerTargetSelector");
-          System.out.println("Selected players: " + targets);
           if (targets.size() < 2) {
             context.getSource().sendFailure(Component.literal("You must specify at least two players."));
             return 0;
