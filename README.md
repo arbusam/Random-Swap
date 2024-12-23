@@ -2,8 +2,9 @@
 An open source minecraft mod that randomly swaps items between player invetories at a random interval.
 
 ## Installation
-1. Download the latest version of the mod from the releases page or from Modrinth.
-2. Place the downloaded jar file in your mods folder.
+1. Download Forge (mod only supports versions 1.19-1.19.3 for now)
+2. Download the latest version of the mod from the [releases page](https://github.com/arbusam/Random-Swap/releases) or from [Modrinth](https://modrinth.com/mod/random-swap).
+3. Place the downloaded jar file in your mods folder.
 
 ## How to use (Commands)
 
