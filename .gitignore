@@ -23,3 +23,5 @@ gradle-app.setting
 run/
 
 .vscode/
+
+.DS_Store
