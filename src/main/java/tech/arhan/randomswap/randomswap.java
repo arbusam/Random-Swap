@@ -136,8 +136,8 @@ public class randomswap
                         }
                     }
                 }
-                swapping = false;
                 startCountdown();
+                swapping = false;
             }
         }
     }
